@@ -13,6 +13,7 @@ interface GameStore {
   logs: string[];
   latestToast: string | null;
   roomNotFound: boolean;
+  restartGame: () => void;
 
   // Actions
   connectSocket: () => void;
@@ -213,4 +214,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   clearToast: () => set({ latestToast: null }),
+
+  restartGame: () => {
+    const { room } = get();
+    if (room.roomId) {
+      socket.emit("RESTART_GAME", { roomId: room.roomId });
+    }
+  },
 }));

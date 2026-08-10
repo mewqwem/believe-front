@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 
 export default function RoomPage() {
   const params = useParams<{ roomId: string }>();
+  const restartGame = useGameStore((s) => s.restartGame);
   const router = useRouter();
   const { room, playerId, rejoinRoom, leaveRoom, startGame, roomNotFound } =
     useGameStore();
@@ -72,6 +73,14 @@ export default function RoomPage() {
             >
               Вийти з гри
             </Button>
+            {room.status === "FINISHED" && (
+              <Button
+                onClick={restartGame}
+                className="bg-emerald-600 hover:bg-emerald-500"
+              >
+                Нове коло
+              </Button>
+            )}
           </div>
         </header>
 
