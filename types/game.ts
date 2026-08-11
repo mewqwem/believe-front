@@ -40,5 +40,5 @@ export interface RoomState {
   players: Player[];
   loserId?: string;
   finishOrder: string[];
-  reconnectGraceMs: number;
+  reconnectGraceMs?: number;
 }

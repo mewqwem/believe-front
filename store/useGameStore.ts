@@ -38,6 +38,7 @@ const initialRoomState: RoomState = {
   currentTurnIndex: 0,
   players: [],
   finishOrder: [],
+  reconnectGraceMs: 30000,
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
