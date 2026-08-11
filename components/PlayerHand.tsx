@@ -1,7 +1,7 @@
 // components/PlayerHand.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/store/useGameStore";
 import { Button } from "@/components/ui/button";
@@ -35,10 +35,18 @@ export const PlayerHand: React.FC = () => {
     playCards,
   } = useGameStore();
 
+  const isNewClaim = room.tablePileCount === 0;
   const { players, currentTurnIndex } = room;
   const activePlayer = players[currentTurnIndex];
   const isMyTurn = Boolean(playerId && activePlayer?.id === playerId);
   const hasSelectedCards = selectedCardIds.length > 0;
+  const showRankPicker = isMyTurn && isNewClaim;
+
+  const sortedHand = useMemo(() => {
+    return [...hand].sort(
+      (a, b) => RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank),
+    );
+  }, [hand]);
 
   const getSuitDisplay = (suit: CardType["suit"]) => {
     switch (suit) {
@@ -55,30 +63,32 @@ export const PlayerHand: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl">
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Заявити ранг:
-        </span>
-        <div className="flex flex-wrap gap-1.5">
-          {RANKS.map((rank) => {
-            const isSelected = selectedClaimRank === rank;
-            return (
-              <button
-                key={rank}
-                type="button"
-                onClick={() => setSelectedClaimRank(rank)}
-                className={`min-w-10 rounded-lg border px-3 py-1.5 text-sm font-bold transition-all ${
-                  isSelected
-                    ? "border-emerald-500 bg-emerald-500/20 text-emerald-400 shadow-sm shadow-emerald-500/20"
-                    : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
-                }`}
-              >
-                {rank}
-              </button>
-            );
-          })}
+      {showRankPicker && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Заявити ранг:
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {RANKS.map((rank) => {
+              const isSelected = selectedClaimRank === rank;
+              return (
+                <button
+                  key={rank}
+                  type="button"
+                  onClick={() => setSelectedClaimRank(rank)}
+                  className={`min-w-10 rounded-lg border px-3 py-1.5 text-sm font-bold transition-all ${
+                    isSelected
+                      ? "border-emerald-500 bg-emerald-500/20 text-emerald-400 shadow-sm shadow-emerald-500/20"
+                      : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                  }`}
+                >
+                  {rank}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <div className="flex justify-between text-xs font-semibold uppercase text-zinc-400">
@@ -87,7 +97,7 @@ export const PlayerHand: React.FC = () => {
         </div>
 
         <div className="flex min-h-[130px] flex-wrap items-end gap-2 overflow-x-auto pb-4 pt-6">
-          {hand.map((card) => {
+          {sortedHand.map((card) => {
             const isSelected = selectedCardIds.includes(card.id);
             const { symbol, color } = getSuitDisplay(card.suit);
 
@@ -144,7 +154,7 @@ export const PlayerHand: React.FC = () => {
           className="w-full bg-emerald-600 px-8 py-6 text-base font-bold text-white shadow-lg hover:bg-emerald-500 disabled:opacity-40 sm:w-auto"
         >
           {hasSelectedCards
-            ? `Покласти карти (${selectedCardIds.length} шт. як "${selectedClaimRank}")`
+            ? `Покласти карти (${selectedCardIds.length} шт)`
             : "Виберіть карти для ходу"}
         </Button>
       </div>
