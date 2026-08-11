@@ -28,6 +28,7 @@ export interface Player {
   name: string;
   cardCount: number;
   isDisconnected?: boolean;
+  disconnectedAt: number | null;
 }
 
 export interface RoomState {
@@ -39,4 +40,5 @@ export interface RoomState {
   players: Player[];
   loserId?: string;
   finishOrder: string[];
+  reconnectGraceMs: number;
 }
