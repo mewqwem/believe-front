@@ -37,39 +37,40 @@ export default function RoomPage() {
 
   if (room.roomId !== params.roomId) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 font-medium text-emerald-400 animate-pulse">
+      <div className="flex min-h-screen items-center justify-center bg-felt text-lg font-medium text-gold animate-pulse">
         Підключення до столу...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen w-full bg-felt text-ivory">
       <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-between gap-6 p-4 md:p-8">
-        <header className="flex items-center justify-between border-b border-zinc-800 pb-4">
+        <header className="flex items-center justify-between border-b border-gold/20 pb-4">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-emerald-400">
+            <h1 className="font-display text-3xl font-bold tracking-tight text-gold">
               BLUFF ROOM
             </h1>
-            <span className="text-xs text-zinc-400">Код: {room.roomId}</span>
+            <span className="text-sm text-ivory/70">Код: {room.roomId}</span>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Start Game button - updated with pointer and disabled cursors */}
             {room.status === "LOBBY" && (
               <Button
                 onClick={startGame}
                 disabled={room.players.length < 2}
-                className="bg-emerald-600 text-white hover:bg-emerald-500"
+                className="cursor-pointer bg-gold font-bold text-ink transition-all hover:bg-gold hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Розпочати гру ({room.players.length}/4)
               </Button>
             )}
 
-            {/* Leave Room Button */}
+            {/* Leave Room Button - updated with pointer cursor */}
             <Button
               onClick={handleLeave}
               variant="outline"
-              className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              className="cursor-pointer border-gold/30 bg-panel font-medium text-ivory transition-colors hover:bg-gold/20"
             >
               Вийти з гри
             </Button>

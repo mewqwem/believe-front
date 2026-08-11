@@ -1,14 +1,22 @@
 // components/GameTable.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect, useReducer } from "react";
 import { motion } from "framer-motion";
+import { Crown, Clock } from "lucide-react";
 import { useGameStore } from "@/store/useGameStore";
 import { Badge } from "@/components/ui/badge";
 
+// Helper function to calculate remaining seconds for offline players
+function secondsLeft(disconnectedAt?: number | null, graceMs?: number) {
+  if (!disconnectedAt) return 0;
+  // Fallback to 30s (30000ms) if graceMs is undefined in the state yet
+  const grace = graceMs || 30000;
+  return Math.max(0, Math.ceil((grace - (Date.now() - disconnectedAt)) / 1000));
+}
+
 export const GameTable: React.FC = () => {
   const { playerId, room } = useGameStore();
-  // Extracted finishOrder from the room object
   const {
     players,
     currentTurnIndex,
@@ -17,77 +25,109 @@ export const GameTable: React.FC = () => {
     finishOrder,
   } = room;
 
+  // Force re-render every second to update the disconnection countdown timers
+  const [, forceTick] = useReducer((c) => c + 1, 0);
+  useEffect(() => {
+    const interval = setInterval(forceTick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const activePlayer = players[currentTurnIndex];
   const isMyTurn = Boolean(playerId && activePlayer?.id === playerId);
 
   return (
-    <div className="relative flex min-h-[340px] flex-col justify-between rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 shadow-inner">
+    // Radial gradient adds a subtle spotlight effect over the green felt
+    <div className="relative flex min-h-[340px] flex-col justify-between rounded-2xl border border-gold/20 bg-felt bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_70%)] p-6 shadow-inner">
       {/* Players panel */}
       <div className="flex flex-wrap items-center justify-center gap-6">
         {players.map((player, index) => {
           const isCurrent = index === currentTurnIndex;
           const isSelf = Boolean(playerId && player.id === playerId);
-
-          // Apply dimming effect if the player is disconnected
           const offlineStyles = player.isDisconnected
             ? "opacity-50 grayscale"
             : "";
+
+          // Determine finish state based on the finishOrder array
+          const finishPosition = finishOrder?.indexOf(player.id) ?? -1;
+          const hasFinished = finishPosition !== -1;
+          const isWinner = finishPosition === 0;
 
           return (
             <motion.div
               key={player.id}
               animate={{ scale: isCurrent ? 1.05 : 1 }}
               className={`flex flex-col items-center rounded-xl border px-4 py-3 transition-all duration-300 ${
-                isCurrent
-                  ? "border-emerald-500/80 bg-emerald-950/20 shadow-lg shadow-emerald-500/10"
-                  : "border-zinc-800 bg-zinc-900/60"
+                isWinner
+                  ? "border-gold bg-gold/10 shadow-lg shadow-gold/20"
+                  : hasFinished
+                    ? "border-gold/10 bg-panel/40 opacity-60"
+                    : isCurrent
+                      ? "border-gold/80 bg-gold/5 shadow-lg shadow-gold/10"
+                      : "border-gold/20 bg-panel"
               } ${offlineStyles}`}
             >
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-zinc-200">
-                  {player.name} {isSelf && "(You)"}
+                {/* Crown for the first player to finish */}
+                {isWinner && <Crown className="h-4 w-4 text-gold" />}
+
+                <span className="font-semibold text-ivory">
+                  {player.name} {isSelf && "(Ви)"}
                 </span>
 
-                {/* Current turn badge */}
-                {isCurrent && !player.isDisconnected && (
-                  <Badge className="bg-emerald-500 text-[10px] uppercase text-zinc-950">
-                    Turn
+                {/* Current turn badge (hidden if finished) */}
+                {isCurrent && !hasFinished && !player.isDisconnected && (
+                  <Badge className="bg-gold text-[10px] uppercase text-ink">
+                    Хід
                   </Badge>
                 )}
 
-                {/* Finish order badge (Rank) */}
-                {finishOrder?.includes(player.id) && (
-                  <Badge className="bg-amber-500 text-[10px] font-bold text-zinc-950">
-                    {finishOrder.indexOf(player.id) + 1} місце
+                {/* Show generic placement badge for other players who finished */}
+                {hasFinished && !isWinner && (
+                  <Badge
+                    variant="outline"
+                    className="border-gold/30 text-[10px] uppercase text-ivory/60"
+                  >
+                    {finishPosition + 1} місце
                   </Badge>
                 )}
 
-                {/* Offline status badge */}
+                {/* Live offline countdown badge */}
                 {player.isDisconnected && (
                   <Badge
                     variant="destructive"
-                    className="border-none bg-rose-900/80 text-[10px] uppercase text-rose-200"
+                    className="flex items-center gap-1 border-none bg-bluff text-[10px] uppercase text-ivory"
                   >
-                    Офлайн
+                    <Clock className="h-3 w-3" />
+                    {/* Access reconnectGraceMs from room state */}
+                    {secondsLeft(player.disconnectedAt, room.reconnectGraceMs)}с
                   </Badge>
                 )}
               </div>
 
               {/* Card count indicator */}
               <div className="mt-2 flex items-center gap-1.5">
-                <div className="flex -space-x-1">
-                  {Array.from({ length: Math.min(player.cardCount, 5) }).map(
-                    (_, i) => (
-                      <div
-                        key={i}
-                        className="h-6 w-4 rounded-sm border border-zinc-700 bg-gradient-to-br from-indigo-900 to-zinc-900"
-                      />
-                    ),
-                  )}
-                </div>
-                <span className="text-xs font-medium text-zinc-400">
-                  {player.cardCount} карт
-                </span>
+                {hasFinished ? (
+                  // Hide the card backs completely when the player has finished
+                  <span className="text-xs font-medium text-ivory/40">
+                    Вибув — карт немає
+                  </span>
+                ) : (
+                  <>
+                    <div className="flex -space-x-1">
+                      {Array.from({
+                        length: Math.min(player.cardCount, 5),
+                      }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-6 w-4 rounded-sm border border-ink/20 bg-ivory shadow-sm"
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium text-ivory/80">
+                      {player.cardCount} карт
+                    </span>
+                  </>
+                )}
               </div>
             </motion.div>
           );
@@ -96,7 +136,7 @@ export const GameTable: React.FC = () => {
 
       {/* Central deck and claimed rank */}
       <div className="my-8 flex flex-col items-center justify-center">
-        <div className="relative flex h-28 w-44 items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/40">
+        <div className="relative flex h-28 w-44 items-center justify-center rounded-xl border border-dashed border-gold/30 bg-panel/50">
           {tablePileCount > 0 ? (
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -104,32 +144,33 @@ export const GameTable: React.FC = () => {
               className="flex flex-col items-center"
             >
               <div className="relative flex items-center justify-center">
-                <div className="absolute -rotate-6 transform rounded-lg border border-zinc-600 bg-zinc-800 px-6 py-8 shadow-md" />
-                <div className="absolute rotate-3 transform rounded-lg border border-zinc-600 bg-zinc-800 px-6 py-8 shadow-md" />
-                <div className="relative z-10 rounded-lg border border-zinc-500 bg-zinc-800 px-6 py-8 shadow-xl">
-                  <span className="text-2xl font-bold text-zinc-100">
+                {/* Visual stacked cards in the center */}
+                <div className="absolute -rotate-6 transform rounded-lg border border-ink/10 bg-ivory px-6 py-8 shadow-md" />
+                <div className="absolute rotate-3 transform rounded-lg border border-ink/10 bg-ivory px-6 py-8 shadow-md" />
+                <div className="relative z-10 rounded-lg border border-ink/20 bg-ivory px-6 py-8 shadow-xl">
+                  <span className="font-display text-3xl font-bold text-ink">
                     {tablePileCount}
                   </span>
                 </div>
               </div>
-              <span className="mt-3 text-xs uppercase tracking-wider text-zinc-400">
+              <span className="mt-4 text-xs uppercase tracking-wider text-ivory/80">
                 Карт на столі
               </span>
             </motion.div>
           ) : (
-            <span className="text-sm text-zinc-500">Стіл порожній</span>
+            <span className="text-base text-ivory/60">Стіл порожній</span>
           )}
         </div>
 
-        {/* Display the currently claimed rank if it exists */}
+        {/* Display the currently claimed rank */}
         {claimedRank && (
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="mt-4 flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-4 py-1.5"
+            className="mt-4 flex items-center gap-2 rounded-full border border-gold/40 bg-panel px-4 py-1.5 shadow-md"
           >
-            <span className="text-xs text-zinc-400">Заявлений ранг:</span>
-            <span className="text-lg font-bold text-emerald-400">
+            <span className="text-sm text-ivory/80">Заявлений ранг:</span>
+            <span className="font-display text-xl font-bold text-gold">
               {claimedRank}
             </span>
           </motion.div>
@@ -139,8 +180,8 @@ export const GameTable: React.FC = () => {
       {/* Bottom status bar */}
       <div className="text-center">
         <span
-          className={`text-sm font-medium ${
-            isMyTurn ? "animate-pulse text-emerald-400" : "text-zinc-500"
+          className={`text-base font-medium ${
+            isMyTurn ? "animate-pulse text-gold" : "text-ivory/60"
           }`}
         >
           {isMyTurn
