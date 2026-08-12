@@ -59,7 +59,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       storedPlayerId = crypto.randomUUID();
       localStorage.setItem("blefPlayerId", storedPlayerId);
     }
-    set({ playerId: storedPlayerId });
+    const storedPlayerName = localStorage.getItem("blefPlayerName") || "";
+
+    set({ playerId: storedPlayerId, playerName: storedPlayerName });
 
     if (socket.connected) return;
 
@@ -143,7 +145,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.removeAllListeners();
   },
 
-  setPlayerName: (name) => set({ playerName: name }),
+  setPlayerName: (name) => {
+    set({ playerName: name });
+    localStorage.setItem("blefPlayerName", name);
+  },
 
   createRoom: () => {
     const { playerName } = get();
