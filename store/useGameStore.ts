@@ -14,6 +14,7 @@ interface GameStore {
   latestToast: string | null;
   roomNotFound: boolean;
   restartGame: () => void;
+  discardSet: () => void;
 
   // Actions
   connectSocket: () => void;
@@ -205,6 +206,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       roomId: room.roomId,
       cardIds: selectedCardIds,
       claimedRank: selectedClaimRank,
+    });
+    set({ selectedCardIds: [] });
+  },
+
+  discardSet: () => {
+    const { room, selectedCardIds } = get();
+    if (!room.roomId || selectedCardIds.length !== 4) return;
+
+    socket.emit("DISCARD_SET", {
+      roomId: room.roomId,
+      cardIds: selectedCardIds,
     });
     set({ selectedCardIds: [] });
   },

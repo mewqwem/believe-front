@@ -33,7 +33,7 @@ export const ActionPanel: React.FC = () => {
           onClick={() => respond("BELIEVE")}
           disabled={!isMyTurn}
           variant="outline"
-          className="cursor-pointer border-gold/60 bg-panel font-semibold text-gold transition-colors hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="cursor-pointer border-gold/60 bg-panel font-semibold text-gold transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15 disabled:cursor-not-allowed disabled:opacity-50"
         >
           👍 Вірю (пропустити перевірку)
         </Button>
@@ -43,7 +43,7 @@ export const ActionPanel: React.FC = () => {
           onClick={() => respond("DOUBT")}
           disabled={!isMyTurn}
           variant="destructive"
-          className="cursor-pointer bg-bluff font-bold text-ivory shadow-md transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="cursor-pointer bg-bluff font-bold text-ivory shadow-md transition-all hover:bg-bluff hover:brightness-110 hover:shadow-lg hover:shadow-bluff/30 disabled:cursor-not-allowed disabled:opacity-50"
         >
           💥 НЕ ВІРЮ! (відкрити карти)
         </Button>

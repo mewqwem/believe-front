@@ -41,7 +41,6 @@ export const GameTable: React.FC = () => {
       {/* Players panel */}
       <div className="flex flex-wrap items-center justify-center gap-6">
         {players.map((player, index) => {
-          const isCurrent = index === currentTurnIndex;
           const isSelf = Boolean(playerId && player.id === playerId);
           const offlineStyles = player.isDisconnected
             ? "opacity-50 grayscale"
@@ -51,6 +50,7 @@ export const GameTable: React.FC = () => {
           const finishPosition = finishOrder?.indexOf(player.id) ?? -1;
           const hasFinished = finishPosition !== -1;
           const isWinner = finishPosition === 0;
+          const isCurrent = index === currentTurnIndex && !hasFinished;
 
           return (
             <motion.div
@@ -58,9 +58,9 @@ export const GameTable: React.FC = () => {
               animate={{ scale: isCurrent ? 1.05 : 1 }}
               className={`flex flex-col items-center rounded-xl border px-4 py-3 transition-all duration-300 ${
                 isWinner
-                  ? "border-gold bg-gold/10 shadow-lg shadow-gold/20"
+                  ? "pointer-events-none border-gold bg-gold/10 opacity-60 grayscale shadow-lg shadow-gold/20"
                   : hasFinished
-                    ? "border-gold/10 bg-panel/40 opacity-60"
+                    ? "pointer-events-none border-gold/10 bg-panel/40 opacity-60 grayscale"
                     : isCurrent
                       ? "border-gold/80 bg-gold/5 shadow-lg shadow-gold/10"
                       : "border-gold/20 bg-panel"
@@ -109,7 +109,9 @@ export const GameTable: React.FC = () => {
                 {hasFinished ? (
                   // Hide the card backs completely when the player has finished
                   <span className="text-xs font-medium text-ivory/40">
-                    Вибув — карт немає
+                    {isWinner
+                      ? "Переможець — 1 місце"
+                      : `${finishPosition + 1} місце — завершив(-ла) гру`}
                   </span>
                 ) : (
                   <>

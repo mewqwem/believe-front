@@ -100,7 +100,7 @@ export const Lobby: React.FC = () => {
               <Button
                 onClick={handleJoin}
                 disabled={!playerName.trim() || !roomCodeInput.trim()}
-                className="cursor-pointer w-full bg-gold py-6 text-lg font-bold text-ink transition-all hover:bg-gold hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer w-full bg-gold py-6 text-lg font-bold text-ink transition-all hover:bg-gold hover:brightness-125 hover:shadow-lg hover:shadow-gold/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Приєднатися до гри
               </Button>
@@ -141,7 +141,7 @@ export const Lobby: React.FC = () => {
                       onClick={handleJoin}
                       disabled={!playerName.trim() || !roomCodeInput.trim()}
                       variant="secondary"
-                      className="cursor-pointer border border-gold/30 bg-felt text-ivory transition-colors hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="cursor-pointer border border-gold/50 bg-felt text-ivory transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Увійти
                     </Button>
@@ -163,7 +163,7 @@ export const Lobby: React.FC = () => {
                 </div>
                 <Button
                   onClick={() => setIsCreatingRoom(true)}
-                  className="cursor-pointer w-full bg-gold py-6 text-lg font-bold text-ink transition-all hover:bg-gold hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer w-full bg-gold py-6 text-lg font-bold text-ink transition-all hover:bg-gold hover:brightness-125 hover:shadow-lg hover:shadow-gold/25 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Створити кімнату
                 </Button>
@@ -195,14 +195,14 @@ export const Lobby: React.FC = () => {
                 <Button
                   onClick={() => setIsCreatingRoom(false)}
                   variant="secondary"
-                  className="cursor-pointer flex-1 border border-gold/30 bg-felt text-ivory transition-colors hover:bg-gold/20"
+                  className="cursor-pointer flex-1 border border-gold/50 bg-felt text-ivory transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
                 >
                   Назад
                 </Button>
                 <Button
                   onClick={handleConfirmCreate}
                   disabled={!playerName.trim()}
-                  className="cursor-pointer flex-1 bg-gold py-6 text-lg font-bold text-ink transition-all hover:bg-gold hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer flex-1 bg-gold py-6 text-lg font-bold text-ink transition-all hover:bg-gold hover:brightness-125 hover:shadow-lg hover:shadow-gold/25 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Почати гру
                 </Button>

@@ -20,7 +20,6 @@ const RANKS: Rank[] = [
   "J",
   "Q",
   "K",
-  "A",
 ];
 
 export const PlayerHand: React.FC = () => {
@@ -33,6 +32,7 @@ export const PlayerHand: React.FC = () => {
     selectedClaimRank,
     setSelectedClaimRank,
     playCards,
+    discardSet,
   } = useGameStore();
 
   const isNewClaim = room.tablePileCount === 0;
@@ -41,6 +41,14 @@ export const PlayerHand: React.FC = () => {
   const isMyTurn = Boolean(playerId && activePlayer?.id === playerId);
   const hasSelectedCards = selectedCardIds.length > 0;
   const showRankPicker = isMyTurn && isNewClaim;
+  const selectedCards = hand.filter((card) =>
+    selectedCardIds.includes(card.id),
+  );
+  const canDiscardSet =
+    selectedCards.length === 4 &&
+    selectedCards.every((card) => card.rank === selectedCards[0].rank) &&
+    isMyTurn &&
+    isNewClaim;
 
   // Sort cards logically by rank
   const sortedHand = useMemo(() => {
@@ -82,7 +90,7 @@ export const PlayerHand: React.FC = () => {
                   className={`min-w-10 cursor-pointer rounded-lg border px-3 py-2 font-display text-base font-bold transition-all ${
                     isSelected
                       ? "border-gold bg-gold/20 text-gold shadow-sm shadow-gold/20"
-                      : "border-gold/20 bg-felt text-ivory/70 hover:border-gold/80 hover:bg-gold/10 hover:text-ivory"
+                      : "border-gold/20 bg-felt text-ivory/70 transition-all hover:border-gold hover:bg-gold/25 hover:text-ivory hover:shadow-sm hover:shadow-gold/20"
                   }`}
                 >
                   {rank}
@@ -118,7 +126,7 @@ export const PlayerHand: React.FC = () => {
                 className={`relative flex h-32 w-24 cursor-pointer select-none flex-col justify-between rounded-xl bg-ivory p-2.5 shadow-lg shadow-black/40 ring-1 ring-black/10 transition-shadow ${
                   isSelected
                     ? "shadow-gold/40 border-2"
-                    : "border-2 border-transparent hover:ring-black/30"
+                    : "border-2 border-transparent hover:ring-gold/60 hover:shadow-xl"
                 }`}
               >
                 {/* Top-left rank and suit */}
@@ -160,15 +168,26 @@ export const PlayerHand: React.FC = () => {
         </div>
 
         {/* Play cards button - updated with pointer and disabled cursors */}
-        <Button
-          onClick={playCards}
-          disabled={!isMyTurn || !hasSelectedCards}
-          className="cursor-pointer w-full bg-gold px-8 py-6 text-lg font-bold text-ink shadow-lg transition-all hover:-translate-y-1 hover:bg-gold hover:brightness-110 hover:shadow-gold/30 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 sm:w-auto"
-        >
-          {hasSelectedCards
-            ? `Покласти карти (${selectedCardIds.length} шт)`
-            : "Виберіть карти для ходу"}
-        </Button>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Button
+            onClick={playCards}
+            disabled={!isMyTurn || !hasSelectedCards}
+            className="cursor-pointer w-full bg-gold px-8 py-6 text-lg font-bold text-ink shadow-lg transition-all hover:-translate-y-1 hover:bg-gold hover:brightness-125 hover:shadow-gold/40 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 sm:w-auto"
+          >
+            {hasSelectedCards
+              ? `Покласти карти (${selectedCardIds.length} шт)`
+              : "Виберіть карти для ходу"}
+          </Button>
+          {canDiscardSet && (
+            <Button
+              onClick={discardSet}
+              variant="outline"
+              className="cursor-pointer border-gold/60 px-6 py-6 text-gold transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
+            >
+              Скинути сет (4× «{selectedCards[0]?.rank}») у відбій
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
