@@ -7,7 +7,6 @@ import { useGameStore } from "@/store/useGameStore";
 import { GameTable } from "@/components/GameTable";
 import { PlayerHand } from "@/components/PlayerHand";
 import { ActionPanel } from "@/components/ActionPanel";
-import { GameLog } from "@/components/GameLog";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -146,7 +145,6 @@ export default function RoomPage() {
           <GameTable />
           <ActionPanel />
           <PlayerHand />
-          <GameLog />
         </section>
       </main>
     </div>

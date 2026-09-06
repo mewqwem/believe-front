@@ -1,5 +1,6 @@
 "use client";
 
+import { GameRules } from "@/components/GameRules";
 import { useState } from "react";
 import { Locale, locales } from "@/lib/i18n";
 import { useI18n } from "@/components/I18nProvider";
@@ -27,6 +28,8 @@ export function LanguageSwitcher() {
 
   return (
     <div className="fixed right-3 top-3 z-[100] flex rounded-xl border border-gold/25 bg-panel/95 p-1 text-xs shadow-lg backdrop-blur" aria-label={t("language.label")}>
+      <GameRules />
+      <span aria-hidden="true" className="mx-1 my-1 w-px bg-gold/20" />
       {locales.map((item) => (
         <button
           key={item}
