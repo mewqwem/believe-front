@@ -9,8 +9,10 @@ import { PlayerHand } from "@/components/PlayerHand";
 import { ActionPanel } from "@/components/ActionPanel";
 import { GameLog } from "@/components/GameLog";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/I18nProvider";
 
 export default function RoomPage() {
+  const { t } = useI18n();
   const params = useParams<{ roomId: string }>();
   const restartGame = useGameStore((s) => s.restartGame);
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     if (roomNotFound) {
-      router.push("/");
+      router.replace("/");
     }
   }, [roomNotFound, router]);
 
@@ -57,7 +59,7 @@ export default function RoomPage() {
   if (room.roomId !== params.roomId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-felt text-lg font-medium text-gold animate-pulse">
-        Підключення до столу...
+        {t("room.connecting")}
       </div>
     );
   }
@@ -69,7 +71,7 @@ export default function RoomPage() {
           <div className="flex items-center justify-between sm:block">
             <div>
               <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-gold">
-                BLUFF ROOM
+                {t("room.title")}
               </h1>
 
               {/* Clickable element to copy ONLY the code */}
@@ -79,13 +81,13 @@ export default function RoomPage() {
                 className="group flex cursor-pointer items-center gap-1.5 text-xs md:text-sm text-ivory/70 transition-colors hover:text-gold focus:outline-none"
               >
                 <span>
-                  Код:{" "}
+                  {t("room.code")}{" "}
                   <strong className="font-mono text-gold underline decoration-gold/30 underline-offset-2">
                     {room.roomId}
                   </strong>
                 </span>
                 <span className="text-[11px] text-emerald-400 font-medium">
-                  {copiedCode ? "✓ код скопійовано" : "(копіювати код)"}
+                  {copiedCode ? t("room.codeCopied") : t("room.copyCode")}
                 </span>
               </button>
             </div>
@@ -97,7 +99,7 @@ export default function RoomPage() {
               size="sm"
               className="sm:hidden cursor-pointer border-gold/50 bg-panel text-xs text-gold transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
             >
-              {copiedLink ? "Скопійовано!" : "Запросити"}
+              {copiedLink ? t("room.copied") : t("room.invite")}
             </Button>
           </div>
 
@@ -108,7 +110,7 @@ export default function RoomPage() {
               variant="outline"
               className="hidden sm:inline-flex cursor-pointer border-gold/50 bg-panel font-medium text-gold transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
             >
-              {copiedLink ? "Посилання скопійовано!" : "Запросити друга"}
+              {copiedLink ? t("room.linkCopied") : t("room.inviteFriend")}
             </Button>
 
             {room.status === "LOBBY" && (
@@ -117,7 +119,7 @@ export default function RoomPage() {
                 disabled={room.players.length < 2}
                 className="flex-1 sm:flex-initial cursor-pointer bg-gold font-bold text-ink transition-all hover:bg-gold hover:brightness-125 hover:shadow-lg hover:shadow-gold/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Розпочати ({room.players.length}/4)
+                {t("room.start", { current: room.players.length, max: 4 })}
               </Button>
             )}
 
@@ -126,7 +128,7 @@ export default function RoomPage() {
                 onClick={restartGame}
                 className="flex-1 sm:flex-initial cursor-pointer bg-emerald-600 font-bold text-white transition-all hover:bg-emerald-500 hover:brightness-110 hover:shadow-lg hover:shadow-emerald-900/30"
               >
-                Нове коло
+                {t("room.newRound")}
               </Button>
             )}
 
@@ -135,7 +137,7 @@ export default function RoomPage() {
               variant="outline"
               className="cursor-pointer border-gold/50 bg-panel font-medium text-ivory transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
             >
-              Вийти
+              {t("common.leave")}
             </Button>
           </div>
         </header>

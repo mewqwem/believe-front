@@ -26,6 +26,7 @@ export interface Card {
 export interface Player {
   id: string;
   name: string;
+  avatar?: string | null;
   cardCount: number;
   isDisconnected?: boolean;
   disconnectedAt: number | null;
@@ -33,7 +34,7 @@ export interface Player {
 
 export interface RoomState {
   roomId: string | null;
-  status: "LOBBY" | "IN_PROGRESS" | "FINISHED";
+  status: "LOBBY" | "PLAYING" | "GAME_OVER" | "IN_PROGRESS" | "FINISHED";
   claimedRank: Rank | null;
   tablePileCount: number;
   currentTurnIndex: number;

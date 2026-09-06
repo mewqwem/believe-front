@@ -4,8 +4,10 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/store/useGameStore";
+import { useI18n } from "@/components/I18nProvider";
 
 export const GameLog: React.FC = () => {
+  const { t } = useI18n();
   const { logs, latestToast, clearToast } = useGameStore();
 
   // Auto-dismiss notification toast after 4 seconds
@@ -40,11 +42,11 @@ export const GameLog: React.FC = () => {
       {/* Expandable Move History Box */}
       <div className="rounded-2xl border border-gold/20 bg-felt/50 p-4">
         <h4 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ivory/70">
-          Game History
+          {t("log.title")}
         </h4>
         <div className="max-h-36 space-y-1.5 overflow-y-auto pr-2 text-sm text-ivory">
           {logs.length === 0 ? (
-            <span className="text-ivory/50">No events logged yet...</span>
+            <span className="text-ivory/50">{t("log.empty")}</span>
           ) : (
             logs.map((log, index) => (
               <div

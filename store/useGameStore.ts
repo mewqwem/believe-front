@@ -13,6 +13,8 @@ interface GameStore {
   logs: string[];
   latestToast: string | null;
   roomNotFound: boolean;
+  joining: boolean;
+  joinError: string | null;
   restartGame: () => void;
   discardSet: () => void;
 
@@ -20,8 +22,8 @@ interface GameStore {
   connectSocket: () => void;
   disconnectSocket: () => void;
   setPlayerName: (name: string) => void;
-  createRoom: () => void;
-  joinRoom: (roomId: string) => void;
+  createRoom: (name?: string, avatar?: string | null) => void;
+  joinRoom: (roomId: string, name?: string, avatar?: string | null) => void;
   rejoinRoom: (roomId: string) => void;
   leaveRoom: () => void; // Added leave action
   startGame: () => void;
@@ -43,6 +45,9 @@ const initialRoomState: RoomState = {
   reconnectGraceMs: 30000,
 };
 
+let joinTimer: ReturnType<typeof setTimeout> | undefined;
+const clearJoinTimer = () => { clearTimeout(joinTimer); joinTimer = undefined; };
+
 export const useGameStore = create<GameStore>((set, get) => ({
   playerId: null,
   playerName: "",
@@ -53,12 +58,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   logs: [],
   latestToast: null,
   roomNotFound: false,
+  joining: false,
+  joinError: null,
 
   connectSocket: () => {
-    let storedPlayerId = localStorage.getItem("blefPlayerId");
+    let storedPlayerId = sessionStorage.getItem("blefPlayerId");
     if (!storedPlayerId) {
       storedPlayerId = crypto.randomUUID();
-      localStorage.setItem("blefPlayerId", storedPlayerId);
+      sessionStorage.setItem("blefPlayerId", storedPlayerId);
     }
     const storedPlayerName = localStorage.getItem("blefPlayerName") || "";
 
@@ -69,7 +76,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.removeAllListeners();
 
     socket.on("ROOM_CREATED", ({ roomId }) => {
-      set((state) => ({ room: { ...state.room, roomId } }));
+      clearJoinTimer();
+      set((state) => ({ room: { ...state.room, roomId }, joining: false, joinError: null, roomNotFound: false }));
     });
 
     socket.on("REJOINED", ({ roomId, status }) => {
@@ -79,9 +87,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }));
     });
 
-    socket.on("JOINED", () => {});
+    socket.on("JOINED", () => { clearJoinTimer(); set({ joining: false, joinError: null }); });
 
     socket.on("ROOM_UPDATED", (roomData) => {
+      // Ignore late updates from a room we have left.
+      if (!roomData.players.some((player: { id: string }) => player.id === get().playerId)) return;
       set({ room: roomData, roomNotFound: false });
     });
 
@@ -103,10 +113,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }));
     });
 
+    socket.on("connect_error", () => {
+      clearJoinTimer();
+      set({ joining: false, joinError: "account.connectionError" });
+    });
+
     socket.on("ERROR", ({ message }) => {
-      set({ latestToast: `Помилка: ${message}` });
+      clearJoinTimer();
+      set({ latestToast: `Помилка: ${message}`, joining: false, joinError: message });
       if (message.includes("не знайдена") || message.includes("не знайдено")) {
-        set({ roomNotFound: true });
+        set({ roomNotFound: true, room: initialRoomState, hand: [], selectedCardIds: [] });
       }
     });
 
@@ -125,8 +141,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       socket.emit("LEAVE_ROOM", { roomId: room.roomId, playerId });
     }
 
+    clearJoinTimer();
     // Clear state synchronously
     set({
+      joining: false,
+      joinError: null,
       room: initialRoomState,
       hand: [],
       selectedCardIds: [],
@@ -135,7 +154,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       roomNotFound: false,
     });
     // Also clear player identity to avoid immediate rejoin/redirect
-    localStorage.removeItem("blefPlayerId");
+    sessionStorage.removeItem("blefPlayerId");
     set({ playerId: null });
   },
 
@@ -151,31 +170,41 @@ export const useGameStore = create<GameStore>((set, get) => ({
     localStorage.setItem("blefPlayerName", name);
   },
 
-  createRoom: () => {
-    const { playerName } = get();
+  createRoom: (name, avatar = null) => {
+    if (get().joining) return;
+    const playerName = name ?? get().playerName;
     let { playerId } = get();
     if (!playerId) {
       const storedPlayerId = crypto.randomUUID();
-      localStorage.setItem("blefPlayerId", storedPlayerId);
+      sessionStorage.setItem("blefPlayerId", storedPlayerId);
       playerId = storedPlayerId;
       set({ playerId });
     }
     if (playerName.trim() && playerId) {
-      socket.emit("CREATE_ROOM", { playerName, playerId });
+      if (!socket.connected) { set({ joinError: "account.connectionError", joining: false }); return; }
+      set({ joining: true, joinError: null, roomNotFound: false });
+      clearJoinTimer();
+      joinTimer = setTimeout(() => set({ joining: false, joinError: "lobby.joinTimeout" }), 10000);
+      socket.emit("CREATE_ROOM", { playerName, playerId, avatar });
     }
   },
 
-  joinRoom: (roomId) => {
-    const { playerName } = get();
+  joinRoom: (roomId, name, avatar = null) => {
+    if (get().joining) return;
+    const playerName = name ?? get().playerName;
     let { playerId } = get();
     if (!playerId) {
       const storedPlayerId = crypto.randomUUID();
-      localStorage.setItem("blefPlayerId", storedPlayerId);
+      sessionStorage.setItem("blefPlayerId", storedPlayerId);
       playerId = storedPlayerId;
       set({ playerId });
     }
     if (playerName.trim() && roomId && playerId) {
-      socket.emit("JOIN_ROOM", { roomId, playerName, playerId });
+      if (!socket.connected) { set({ joinError: "account.connectionError", joining: false }); return; }
+      set({ joining: true, joinError: null, roomNotFound: false });
+      clearJoinTimer();
+      joinTimer = setTimeout(() => set({ joining: false, joinError: "lobby.joinTimeout" }), 10000);
+      socket.emit("JOIN_ROOM", { roomId, playerName, playerId, avatar });
     }
   },
 

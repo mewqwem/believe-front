@@ -1,196 +1,52 @@
-// components/GameTable.tsx
 "use client";
-
-import React, { useEffect, useReducer } from "react";
-import { motion } from "framer-motion";
-import { Crown, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/useGameStore";
-import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/components/I18nProvider";
+import { PlayerSeat } from "@/components/PlayerSeat";
+import type { Player } from "@/types/game";
 
-// Helper function to calculate remaining seconds for offline players
-function secondsLeft(disconnectedAt?: number | null, graceMs?: number) {
-  if (!disconnectedAt) return 0;
-  // Fallback to 30s (30000ms) if graceMs is undefined in the state yet
-  const grace = graceMs || 30000;
-  return Math.max(0, Math.ceil((grace - (Date.now() - disconnectedAt)) / 1000));
-}
-
-export const GameTable: React.FC = () => {
+export const GameTable = () => {
+  const { t } = useI18n();
   const { playerId, room } = useGameStore();
-  const {
-    players,
-    currentTurnIndex,
-    claimedRank,
-    tablePileCount,
-    finishOrder,
-  } = room;
-
-  // Force re-render every second to update the disconnection countdown timers
-  const [, forceTick] = useReducer((c) => c + 1, 0);
+  const { players, currentTurnIndex, claimedRank, tablePileCount, finishOrder } = room;
+  const [now, setNow] = useState(0);
+  const hasDisconnected = players.some((player) => player.isDisconnected);
   useEffect(() => {
-    const interval = setInterval(forceTick, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
+    if (!hasDisconnected) return;
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [hasDisconnected]);
+  const playing = room.status === 'PLAYING' || room.status === 'IN_PROGRESS';
+  const finished = room.status === 'GAME_OVER' || room.status === 'FINISHED';
   const activePlayer = players[currentTurnIndex];
-  const isMyTurn = Boolean(playerId && activePlayer?.id === playerId);
-
-  return (
-    // Radial gradient adds a subtle spotlight effect over the green felt
-    <div className="relative flex min-h-[340px] flex-col justify-between rounded-2xl border border-gold/20 bg-felt bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_70%)] p-6 shadow-inner">
-      {/* Players panel */}
-      <div className="flex flex-wrap items-center justify-center gap-6">
-        {players.map((player, index) => {
-          const isSelf = Boolean(playerId && player.id === playerId);
-          const offlineStyles = player.isDisconnected
-            ? "opacity-50 grayscale"
-            : "";
-
-          // Determine finish state based on the finishOrder array
-          const finishPosition = finishOrder?.indexOf(player.id) ?? -1;
-          const hasFinished = finishPosition !== -1;
-          const isWinner = finishPosition === 0;
-          const isCurrent = index === currentTurnIndex && !hasFinished;
-
-          return (
-            <motion.div
-              key={player.id}
-              animate={{ scale: isCurrent ? 1.05 : 1 }}
-              className={`flex flex-col items-center rounded-xl border px-4 py-3 transition-all duration-300 ${
-                isWinner
-                  ? "pointer-events-none border-gold bg-gold/10 opacity-60 grayscale shadow-lg shadow-gold/20"
-                  : hasFinished
-                    ? "pointer-events-none border-gold/10 bg-panel/40 opacity-60 grayscale"
-                    : isCurrent
-                      ? "border-gold/80 bg-gold/5 shadow-lg shadow-gold/10"
-                      : "border-gold/20 bg-panel"
-              } ${offlineStyles}`}
-            >
-              <div className="flex items-center gap-2">
-                {/* Crown for the first player to finish */}
-                {isWinner && <Crown className="h-4 w-4 text-gold" />}
-
-                <span className="font-semibold text-ivory">
-                  {player.name} {isSelf && "(Ви)"}
-                </span>
-
-                {/* Current turn badge (hidden if finished) */}
-                {isCurrent && !hasFinished && !player.isDisconnected && (
-                  <Badge className="bg-gold text-[10px] uppercase text-ink">
-                    Хід
-                  </Badge>
-                )}
-
-                {/* Show generic placement badge for other players who finished */}
-                {hasFinished && !isWinner && (
-                  <Badge
-                    variant="outline"
-                    className="border-gold/30 text-[10px] uppercase text-ivory/60"
-                  >
-                    {finishPosition + 1} місце
-                  </Badge>
-                )}
-
-                {/* Live offline countdown badge */}
-                {player.isDisconnected && (
-                  <Badge
-                    variant="destructive"
-                    className="flex items-center gap-1 border-none bg-bluff text-[10px] uppercase text-ivory"
-                  >
-                    <Clock className="h-3 w-3" />
-                    {/* Access reconnectGraceMs from room state */}
-                    {secondsLeft(player.disconnectedAt, room.reconnectGraceMs)}с
-                  </Badge>
-                )}
-              </div>
-
-              {/* Card count indicator */}
-              <div className="mt-2 flex items-center gap-1.5">
-                {hasFinished ? (
-                  // Hide the card backs completely when the player has finished
-                  <span className="text-xs font-medium text-ivory/40">
-                    {isWinner
-                      ? "Переможець — 1 місце"
-                      : `${finishPosition + 1} місце — завершив(-ла) гру`}
-                  </span>
-                ) : (
-                  <>
-                    <div className="flex -space-x-1">
-                      {Array.from({
-                        length: Math.min(player.cardCount, 5),
-                      }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-6 w-4 rounded-sm border border-ink/20 bg-ivory shadow-sm"
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm font-medium text-ivory/80">
-                      {player.cardCount} карт
-                    </span>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
+  // Rotate only visual seats, preserving the server's turn order.
+  const selfIndex = players.findIndex((player) => player.id === playerId);
+  const pivot = selfIndex < 0 ? 0 : selfIndex;
+  const seats = [...players.slice(pivot), ...players.slice(0, pivot)];
+  const bottom = seats[0];
+  const others = seats.slice(1);
+  const topIndex = Math.floor(others.length / 2);
+  const top = others[topIndex];
+  const left = others.slice(0, topIndex).reverse();
+  const right = others.slice(topIndex + 1);
+  const rows = Math.max(left.length, right.length, 1);
+  const seat = (player: Player) => {
+    const place = (finishOrder?.indexOf(player.id) ?? -1) + 1;
+    const seconds = player.disconnectedAt ? Math.max(0, Math.ceil(((room.reconnectGraceMs || 30000) - (Math.max(now, player.disconnectedAt) - player.disconnectedAt)) / 1000)) : 0;
+    return <PlayerSeat key={player.id} player={player} isSelf={player.id === playerId} isCurrent={playing && player.id === activePlayer?.id && !place} place={place} seconds={seconds} playing={playing || finished} />;
+  };
+  return <section aria-label={t('table.label')} className="rounded-3xl border border-gold/15 bg-panel/40 px-1 py-5 shadow-inner">
+    <div className="relative isolate grid grid-cols-[minmax(0,1fr)_minmax(88px,1.2fr)_minmax(0,1fr)] items-center gap-x-1 gap-y-3 sm:grid-cols-[minmax(0,1fr)_minmax(160px,2fr)_minmax(0,1fr)]" style={{ gridTemplateRows: `auto repeat(${rows}, minmax(150px, auto)) auto` }}>
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-[12%] inset-y-12 -z-10 rounded-[45%] border-[8px] border-gold/15 bg-felt bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.07),transparent_75%)] shadow-[inset_0_0_35px_rgba(0,0,0,0.4),0_12px_30px_rgba(0,0,0,0.25)]" />
+      <div className="col-start-2 row-start-1 min-w-0">{top && seat(top)}</div>
+      {left.map((player, index) => <div key={player.id} className="col-start-1 min-w-0" style={{ gridRow: index + 2 }}>{seat(player)}</div>)}
+      {right.map((player, index) => <div key={player.id} className="col-start-3 min-w-0" style={{ gridRow: index + 2 }}>{seat(player)}</div>)}
+      <div className="col-start-2 flex min-w-0 flex-col items-center justify-center gap-3 text-center" style={{ gridRow: `2 / span ${rows}` }}>
+        {tablePileCount > 0 ? <><div className="relative flex h-24 w-16 items-center justify-center rounded-lg border-2 border-gold/50 bg-panel shadow-[5px_4px_0_#d9c9a0,-4px_-3px_0_#ece3ce] sm:h-28 sm:w-20"><span className="font-display text-3xl text-gold">{tablePileCount}</span></div><span className="text-[10px] uppercase tracking-wide text-ivory/60 sm:text-xs">{t('table.cardsOnTable')}</span></> : <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-gold/20 px-2 text-xs text-ivory/50">{t(room.status === 'LOBBY' ? 'table.waitingPlayers' : 'table.empty')}</div>}
+        {claimedRank && <div className="text-xs text-ivory/70"><span className="block">{t('table.claimedRank')}</span><strong className="font-display text-2xl text-gold">{claimedRank}</strong></div>}
       </div>
-
-      {/* Central deck and claimed rank */}
-      <div className="my-8 flex flex-col items-center justify-center">
-        <div className="relative flex h-28 w-44 items-center justify-center rounded-xl border border-dashed border-gold/30 bg-panel/50">
-          {tablePileCount > 0 ? (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex flex-col items-center"
-            >
-              <div className="relative flex items-center justify-center">
-                {/* Visual stacked cards in the center */}
-                <div className="absolute -rotate-6 transform rounded-lg border border-ink/10 bg-ivory px-6 py-8 shadow-md" />
-                <div className="absolute rotate-3 transform rounded-lg border border-ink/10 bg-ivory px-6 py-8 shadow-md" />
-                <div className="relative z-10 rounded-lg border border-ink/20 bg-ivory px-6 py-8 shadow-xl">
-                  <span className="font-display text-3xl font-bold text-ink">
-                    {tablePileCount}
-                  </span>
-                </div>
-              </div>
-              <span className="mt-4 text-xs uppercase tracking-wider text-ivory/80">
-                Карт на столі
-              </span>
-            </motion.div>
-          ) : (
-            <span className="text-base text-ivory/60">Стіл порожній</span>
-          )}
-        </div>
-
-        {/* Display the currently claimed rank */}
-        {claimedRank && (
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="mt-4 flex items-center gap-2 rounded-full border border-gold/40 bg-panel px-4 py-1.5 shadow-md"
-          >
-            <span className="text-sm text-ivory/80">Заявлений ранг:</span>
-            <span className="font-display text-xl font-bold text-gold">
-              {claimedRank}
-            </span>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Bottom status bar */}
-      <div className="text-center">
-        <span
-          className={`text-base font-medium ${
-            isMyTurn ? "animate-pulse text-gold" : "text-ivory/60"
-          }`}
-        >
-          {isMyTurn
-            ? "Твій хід! Використовуй панель внизу для ходу."
-            : `Очікуємо хід: ${activePlayer?.name || "..."}`}
-        </span>
-      </div>
+      <div className="col-start-2 min-w-0" style={{ gridRow: rows + 2 }}>{bottom && seat(bottom)}</div>
     </div>
-  );
+    <p aria-live="polite" className="mx-auto mt-5 max-w-md px-3 text-center text-sm text-ivory/70">{room.status === 'LOBBY' ? t('table.lobbyHint') : finished ? t('table.gameFinished') : activePlayer?.id === playerId ? t('table.yourTurn') : t('table.waiting', { name: activePlayer?.name || '…' })}</p>
+  </section>;
 };

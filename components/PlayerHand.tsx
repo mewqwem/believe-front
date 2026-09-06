@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useGameStore } from "@/store/useGameStore";
 import { Button } from "@/components/ui/button";
 import { Card as CardType, Rank } from "@/types/game";
+import { useI18n } from "@/components/I18nProvider";
 
 const RANKS: Rank[] = [
   "2",
@@ -23,6 +24,7 @@ const RANKS: Rank[] = [
 ];
 
 export const PlayerHand: React.FC = () => {
+  const { t } = useI18n();
   const {
     playerId,
     room,
@@ -77,7 +79,7 @@ export const PlayerHand: React.FC = () => {
       {showRankPicker && (
         <div className="flex flex-col gap-3">
           <span className="text-sm font-semibold uppercase tracking-wider text-ivory/80">
-            Заявити ранг:
+            {t("hand.claimRank")}
           </span>
           <div className="flex flex-wrap gap-2">
             {RANKS.map((rank) => {
@@ -104,8 +106,8 @@ export const PlayerHand: React.FC = () => {
       {/* Cards container */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-between text-sm font-semibold uppercase text-ivory/80">
-          <span>Твоя рука ({hand.length})</span>
-          <span>Вибрано: {selectedCardIds.length}</span>
+          <span>{t("hand.yourHand", { count: hand.length })}</span>
+          <span>{t("hand.selected", { count: selectedCardIds.length })}</span>
         </div>
 
         <div className="flex min-h-[140px] flex-wrap items-end gap-2 overflow-x-auto pb-4 pt-6">
@@ -155,14 +157,11 @@ export const PlayerHand: React.FC = () => {
         <div className="text-base">
           {isMyTurn ? (
             <span className="animate-pulse font-semibold text-gold">
-              ⚡ Твій хід! Вибери карти та натисни кнопку ходу.
+              {t("hand.yourTurn")}
             </span>
           ) : (
             <span className="text-ivory/80">
-              Зараз хід:{" "}
-              <strong className="text-ivory">
-                {activePlayer?.name || "..."}
-              </strong>
+              {t("hand.currentTurn", { name: activePlayer?.name || "…" })}
             </span>
           )}
         </div>
@@ -175,8 +174,8 @@ export const PlayerHand: React.FC = () => {
             className="cursor-pointer w-full bg-gold px-8 py-6 text-lg font-bold text-ink shadow-lg transition-all hover:-translate-y-1 hover:bg-gold hover:brightness-125 hover:shadow-gold/40 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 sm:w-auto"
           >
             {hasSelectedCards
-              ? `Покласти карти (${selectedCardIds.length} шт)`
-              : "Виберіть карти для ходу"}
+              ? t("hand.playCards", { count: selectedCardIds.length })
+              : t("hand.selectCards")}
           </Button>
           {canDiscardSet && (
             <Button
@@ -184,7 +183,7 @@ export const PlayerHand: React.FC = () => {
               variant="outline"
               className="cursor-pointer border-gold/60 px-6 py-6 text-gold transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
             >
-              Скинути сет (4× «{selectedCards[0]?.rank}») у відбій
+              {t("hand.discardSet", { rank: selectedCards[0]?.rank || "" })}
             </Button>
           )}
         </div>
