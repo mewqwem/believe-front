@@ -1,6 +1,7 @@
 "use client";
 
 import { GameRules } from "@/components/GameRules";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Locale, locales } from "@/lib/i18n";
 import { useI18n } from "@/components/I18nProvider";
@@ -10,6 +11,8 @@ const labels: Record<Locale, string> = { uk: "UA", pl: "PL", en: "EN" };
 export function LanguageSwitcher() {
   const { locale, t } = useI18n();
   const [pending, setPending] = useState(false);
+  const pathname = usePathname();
+  if (pathname.startsWith("/room/")) return null;
 
   const changeLanguage = async (next: Locale) => {
     if (next === locale || pending) return;

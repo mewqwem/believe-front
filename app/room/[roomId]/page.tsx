@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useGameStore } from "@/store/useGameStore";
+import { GameRules } from "@/components/GameRules";
+import { GameToasts } from "@/components/GameToasts";
 import { GameTable } from "@/components/GameTable";
 import { PlayerHand } from "@/components/PlayerHand";
 import { ActionPanel } from "@/components/ActionPanel";
@@ -65,6 +67,7 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen w-full bg-felt text-ivory">
+      <GameToasts />
       <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-between gap-6 p-4 md:p-8">
         <header className="flex flex-col gap-4 border-b border-gold/20 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between sm:block">
@@ -103,6 +106,7 @@ export default function RoomPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <GameRules />
             {/* Desktop invite link button */}
             <Button
               onClick={handleCopyInviteLink}
