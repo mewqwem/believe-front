@@ -13,7 +13,7 @@ const ranks: Rank[] = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 function loadScenario(index: number) {
   const hand: Card[] = ranks.map((rank, i) => ({ id: `demo-${i}`, rank, suit: i % 2 ? 'spades' : 'hearts' }));
   const players = names.map((name, i) => ({ id: `demo-${i}`, name, cardCount: i === 0 ? 13 : 5, avatar: null, disconnectedAt: null as number | null, isDisconnected: false }));
-  const room: RoomState = { roomId: 'DEMO', players, status: 'PLAYING', currentTurnIndex: 1, claimedRank: 'Q', tablePileCount: 4, finishOrder: [], reconnectGraceMs: 30000 };
+  const room: RoomState = { roomId: 'DEMO', maxPlayers: 8, players, status: 'PLAYING', currentTurnIndex: 1, claimedRank: 'Q', tablePileCount: 4, finishOrder: [], reconnectGraceMs: 30000 };
   let latestToast: string | null = null;
   if (index === 1) { room.currentTurnIndex = 0; room.tablePileCount = 0; room.claimedRank = null; }
   if (index === 2) { players[1].cardCount += 4; room.tablePileCount = 0; room.claimedRank = null; room.currentTurnIndex = 0; latestToast = 'Марія блефувала! Вона забирає всі 4 карти зі столу.'; }

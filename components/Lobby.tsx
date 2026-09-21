@@ -26,6 +26,7 @@ const LobbyForm: React.FC<LobbyProps & { inviteCode: string }> = ({ inviteCode, 
   const { t } = useI18n();
   const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [maxPlayers, setMaxPlayers] = useState(4);
 
   // Local state for the room code input (initialized with URL parameter if present)
   const [roomCodeInput, setRoomCodeInput] = useState(inviteCode);
@@ -36,7 +37,7 @@ const LobbyForm: React.FC<LobbyProps & { inviteCode: string }> = ({ inviteCode, 
   const handleConfirmCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (playerName.trim()) {
-      createRoom(playerName, user?.avatar);
+      createRoom(playerName, user?.avatar, maxPlayers);
     }
   };
 
@@ -206,15 +207,90 @@ const LobbyForm: React.FC<LobbyProps & { inviteCode: string }> = ({ inviteCode, 
                 />
               </div>)}
 
-              <div className="space-y-2 p-4 border border-dashed border-gold/30 rounded-lg bg-felt/50 flex items-center justify-center min-h-[100px]">
-                <p className="text-sm text-ivory/50 text-center">
-                  {t("lobby.settingsPlaceholder")}
-                </p>
+              <div className="space-y-4 rounded-2xl border border-gold/25 bg-felt/60 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="max-players-slider" className="text-sm font-semibold uppercase tracking-wider text-ivory/90">
+                      {t("lobby.maxPlayers")}
+                    </label>
+                    <p className="text-xs text-ivory/60">
+                      {t("lobby.maxPlayersHint")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-xl border border-gold/40 bg-panel px-3 py-1 shadow-inner">
+                    <span className="font-mono text-xl font-bold text-gold">{maxPlayers}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setMaxPlayers((prev) => Math.max(2, prev - 1))}
+                      disabled={maxPlayers <= 2}
+                      aria-label="Зменшити кількість гравців"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-panel text-lg font-bold text-gold transition-all hover:border-gold hover:bg-gold/10 hover:shadow-sm hover:shadow-gold/20 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer"
+                    >
+                      −
+                    </button>
+                    <div className="relative flex-1">
+                      <input
+                        id="max-players-slider"
+                        type="range"
+                        min={2}
+                        max={10}
+                        step={1}
+                        value={maxPlayers}
+                        onChange={(e) => setMaxPlayers(Number(e.target.value))}
+                        aria-valuemin={2}
+                        aria-valuemax={10}
+                        aria-valuenow={maxPlayers}
+                        aria-label={t("lobby.maxPlayers")}
+                        style={{
+                          background: `linear-gradient(to right, #c9a96a 0%, #c9a96a ${((maxPlayers - 2) / 8) * 100}%, rgba(201, 169, 106, 0.2) ${((maxPlayers - 2) / 8) * 100}%, rgba(201, 169, 106, 0.2) 100%)`,
+                        }}
+                        className="h-2.5 w-full cursor-pointer appearance-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gold [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-panel [&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(201,169,106,0.7)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gold [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-panel [&::-moz-range-thumb]:shadow-[0_0_8px_rgba(201,169,106,0.7)] [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:hover:scale-125"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMaxPlayers((prev) => Math.min(10, prev + 1))}
+                      disabled={maxPlayers >= 10}
+                      aria-label="Збільшити кількість гравців"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-panel text-lg font-bold text-gold transition-all hover:border-gold hover:bg-gold/10 hover:shadow-sm hover:shadow-gold/20 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between px-1 text-xs text-ivory/50 font-mono select-none">
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setMaxPlayers(num)}
+                        className={`transition-all cursor-pointer hover:text-gold ${
+                          maxPlayers === num ? "font-bold text-gold scale-125" : ""
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-gold/15 pt-2 text-xs">
+                  <span className="text-ivory/50">2–10</span>
+                  <span className="font-medium text-gold">{t("lobby.maxPlayersRecommended")}</span>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <Button
-                  onClick={() => setIsCreatingRoom(false)}
+                  onClick={() => {
+                    setIsCreatingRoom(false);
+                    setMaxPlayers(4);
+                  }}
                   variant="secondary"
                   className="cursor-pointer flex-1 border border-gold/50 bg-felt text-ivory transition-all hover:border-gold hover:bg-gold/30 hover:text-ivory hover:shadow-md hover:shadow-gold/15"
                 >

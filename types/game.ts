@@ -34,6 +34,7 @@ export interface Player {
 
 export interface RoomState {
   roomId: string | null;
+  maxPlayers: number;
   status: "LOBBY" | "PLAYING" | "GAME_OVER" | "IN_PROGRESS" | "FINISHED";
   claimedRank: Rank | null;
   tablePileCount: number;

@@ -22,7 +22,7 @@ interface GameStore {
   connectSocket: () => void;
   disconnectSocket: () => void;
   setPlayerName: (name: string) => void;
-  createRoom: (name?: string, avatar?: string | null) => void;
+  createRoom: (name?: string, avatar?: string | null, maxPlayers?: number) => void;
   joinRoom: (roomId: string, name?: string, avatar?: string | null) => void;
   rejoinRoom: (roomId: string) => void;
   leaveRoom: () => void; // Added leave action
@@ -34,8 +34,16 @@ interface GameStore {
   clearToast: () => void;
 }
 
+const errorTranslationKeys: Record<string, string> = {
+  ROOM_FULL: "lobby.roomFull",
+  GAME_ALREADY_STARTED: "lobby.gameAlreadyStarted",
+  ROOM_NOT_FOUND: "lobby.roomNotFound",
+  PLAYER_ALREADY_IN_ROOM: "lobby.playerAlreadyInRoom",
+};
+
 const initialRoomState: RoomState = {
   roomId: null,
+  maxPlayers: 4,
   status: "LOBBY",
   claimedRank: null,
   tablePileCount: 0,
@@ -92,7 +100,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.on("ROOM_UPDATED", (roomData) => {
       // Ignore late updates from a room we have left.
       if (!roomData.players.some((player: { id: string }) => player.id === get().playerId)) return;
-      set({ room: roomData, roomNotFound: false });
+      set({
+        room: {
+          ...roomData,
+          maxPlayers: roomData.maxPlayers ?? 4,
+        },
+        roomNotFound: false,
+      });
     });
 
     socket.on("HAND_UPDATED", ({ hand }) => {
@@ -118,10 +132,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ joining: false, joinError: "account.connectionError" });
     });
 
-    socket.on("ERROR", ({ message }) => {
+    socket.on("ERROR", ({ code, message }: { code?: string; message?: string } = {}) => {
       clearJoinTimer();
-      set({ latestToast: `Помилка: ${message}`, joining: false, joinError: message });
-      if (message.includes("не знайдена") || message.includes("не знайдено")) {
+      const errorKey = (code && errorTranslationKeys[code]) || message || "lobby.genericError";
+      set({ latestToast: `Помилка: ${message || errorKey}`, joining: false, joinError: errorKey });
+      if (code === "ROOM_NOT_FOUND" || message?.includes("не знайдена") || message?.includes("не знайдено")) {
         set({ roomNotFound: true, room: initialRoomState, hand: [], selectedCardIds: [] });
       }
     });
@@ -170,7 +185,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     localStorage.setItem("blefPlayerName", name);
   },
 
-  createRoom: (name, avatar = null) => {
+  createRoom: (name, avatar = null, maxPlayers = 4) => {
     if (get().joining) return;
     const playerName = name ?? get().playerName;
     let { playerId } = get();
@@ -185,7 +200,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ joining: true, joinError: null, roomNotFound: false });
       clearJoinTimer();
       joinTimer = setTimeout(() => set({ joining: false, joinError: "lobby.joinTimeout" }), 10000);
-      socket.emit("CREATE_ROOM", { playerName, playerId, avatar });
+      socket.emit("CREATE_ROOM", { playerName, playerId, avatar, maxPlayers });
     }
   },
 

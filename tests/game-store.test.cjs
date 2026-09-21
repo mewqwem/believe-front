@@ -6,7 +6,8 @@ const ts = require('typescript');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../store/useGameStore.ts'), 'utf8');
 function setup() {
   const handlers = {};
-  const socket = { connected: false, on: (name, fn) => { handlers[name] = fn; }, removeAllListeners() {}, connect() { this.connected = true; }, emit() {} };
+  const emitted = [];
+  const socket = { connected: false, on: (name, fn) => { handlers[name] = fn; }, removeAllListeners() {}, connect() { this.connected = true; }, emit(name, data) { emitted.push({ name, data }); } };
   const storage = () => { const values = new Map(); return { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) }; };
   const exports = {};
   const sessionStorage = storage();
@@ -18,7 +19,7 @@ function setup() {
   });
   const store = exports.useGameStore;
   store.getState().connectSocket();
-  return { store, handlers, sessionStorage };
+  return { store, handlers, sessionStorage, emitted };
 }
 test('guest identity is per tab and ignores legacy shared identity', () => {
   const a = setup(), b = setup();
@@ -44,3 +45,31 @@ test('join rejection ends pending state and exposes the error; late room updates
   handlers.ROOM_UPDATED({ roomId: 'OLD123', players: [{ id: 'someone-else' }] });
   assert.equal(store.getState().room.roomId, null);
 });
+test('createRoom sends custom maxPlayers and updates room state on ROOM_UPDATED', () => {
+  const { store, handlers, emitted } = setup();
+  assert.equal(store.getState().room.maxPlayers, 4);
+
+  store.getState().createRoom('Host', null, 7);
+  const createEvent = emitted.find((e) => e.name === 'CREATE_ROOM');
+  assert.ok(createEvent);
+  assert.equal(createEvent.data.maxPlayers, 7);
+
+  handlers.ROOM_UPDATED({
+    roomId: 'NEW123',
+    maxPlayers: 7,
+    players: [{ id: store.getState().playerId, name: 'Host' }],
+  });
+  assert.equal(store.getState().room.maxPlayers, 7);
+});
+test('server error codes map to translation keys with fallback for unknown codes', () => {
+  const { store, handlers } = setup();
+  handlers.ERROR({ code: 'ROOM_FULL', message: 'lobby.roomFull' });
+  assert.equal(store.getState().joinError, 'lobby.roomFull');
+
+  handlers.ERROR({ code: 'GAME_ALREADY_STARTED' });
+  assert.equal(store.getState().joinError, 'lobby.gameAlreadyStarted');
+
+  handlers.ERROR({ code: 'UNKNOWN_CODE' });
+  assert.equal(store.getState().joinError, 'lobby.genericError');
+});
+

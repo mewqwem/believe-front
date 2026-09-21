@@ -117,12 +117,18 @@ export default function RoomPage() {
             </Button>
 
             {room.status === "LOBBY" && (
+              <span className="inline-flex items-center justify-center rounded-lg border border-gold/40 bg-panel px-3 py-2 text-xs sm:text-sm font-medium text-gold shadow-sm">
+                {t("room.playersCount", { current: room.players.length, max: room.maxPlayers ?? 4 })}
+              </span>
+            )}
+
+            {room.status === "LOBBY" && (
               <Button
                 onClick={startGame}
                 disabled={room.players.length < 2}
                 className="flex-1 sm:flex-initial cursor-pointer bg-gold font-bold text-ink transition-all hover:bg-gold hover:brightness-125 hover:shadow-lg hover:shadow-gold/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {t("room.start", { current: room.players.length, max: 4 })}
+                {t("room.startGame")}
               </Button>
             )}
 
