@@ -23,6 +23,7 @@ const RANKS: Rank[] = [
   "K",
   "A",
 ];
+const CLAIMABLE_RANKS = RANKS.filter((rank) => rank !== "A");
 
 export const PlayerHand: React.FC = () => {
   const { t } = useI18n();
@@ -119,7 +120,7 @@ export const PlayerHand: React.FC = () => {
             {t("hand.claimRank")}
           </span>
           <div className="flex gap-1 overflow-x-auto pb-1">
-            {RANKS.map((rank) => {
+            {CLAIMABLE_RANKS.map((rank) => {
               const isSelected = selectedClaimRank === rank;
               return (
                 <button
